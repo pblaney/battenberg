@@ -1,30 +1,12 @@
-#' Obtain allele counts for 1000 Genomes loci through external program alleleCount
+#' Chromosome notation standardisation (removing 'chr' string from chromosome names - mainly an issue in hg38 BAMs)
 #'
-#' @param bam.file A BAM alignment file on which the counter should be run.
-#' @param output.file The file where output should go.
-#' @param g1000.loci A file with 1000 Genomes SNP loci.
-#' @param min.base.qual The minimum base quality required for it to be counted (optional, default=20).
-#' @param min.map.qual The minimum mapping quality required for it to be counted (optional, default=35).
-#' @param allelecounter.exe A pointer to where the alleleCounter executable can be found (optional, default points to $PATH).
-#' @author sd11
+#' @param GERMLINENAME The germline identifier, this is used as a prefix for the allele count files. If allele counts are supplied separately, they are expected to have this identifier as prefix.
+#' @author Naser Ansari-Pour (BDI, Oxford)
 #' @export
-getAlleleCounts = function(bam.file, output.file, g1000.loci, min.base.qual=20, min.map.qual=35, allelecounter.exe="alleleCounter") {
-  cmd = paste(allelecounter.exe,
-              "-b", bam.file,
-              "-l", g1000.loci,
-              "-o", output.file,
-              "-m", min.base.qual,
-              "-q", min.map.qual)
-  
-  
-  # alleleCount >= v4.0.0 is sped up considerably on 1000G loci when run in dense-snp mode            
-  counter_version = system(paste(allelecounter.exe, "--version"), intern = T)
-  if (as.integer(substr(x = counter_version, start = 1, stop = 1)) >= 4)
-    cmd = paste(cmd, "--dense-snps")
-  
-  system(cmd, wait=T)
+standardiseChrNotation_germline = function(GERMLINENAME) {
+gAF=capture.output(cat('bash -c \'sed -i \'s/chr//g\' ', GERMLINENAME,'_alleleFrequencies_chr*.txt\'',sep = ""))
+system(gAF)
 }
-
 
 #' Obtain BAF and LogR from the Germline allele counts
 #'
@@ -150,6 +132,7 @@ germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom
   i=chrom
   print(paste("chrom=",i))
   pcf_input=data.frame(chr=i,position=GL_OHET[[i]]$Position,IVD=(GL_OHET[[i]]$Position_dist_percent))
+  pcf_input=pcf_input[which(pcf_input$position<chr_loc[i,"cen.left.base"]-CENTROMERE_DIST | pcf_input$position>chr_loc[i,"cen.right.base"]+CENTROMERE_DIST),]
   pcf_input=pcf_input[which(pcf_input$position>=chr_loc[i,"start"] & pcf_input$position<=chr_loc[i,"end"]),] # use only regions covered with gcCorrect LogR range 
   PCF=pcf(pcf_input,gamma=GAMMA_IVD,kmin = KMIN_IVD)
   pdf(paste0(PCF_folder,"/",GERMLINENAME,"_chr",i,"_PCF_plot.pdf"))
@@ -191,12 +174,24 @@ germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom
   if (!is.null(nrow(loh_regions))){
     for (j in 1:nrow(loh_regions)){
       if (loh_regions$arm[j]=="p"){
-        if (loh_regions$end.pos[j]-chr_loc$cen.left.base[i]<CENTROMERE_DIST){ #FOR EXCLUSION: max distance to centromere = 500kb
+        #if (loh_regions$end.pos[j]-chr_loc$cen.left.base[i]<1e5 & loh_regions$diff[j]<1e6){ #FOR EXCLUSION: max distance to centromere = 100kb , max length of short LOH region = 1Mb
+        #  noise=append(noise,j)
+        #}
+        if (loh_regions$end.pos[j]>chr_loc$cen.left.base[i] & loh_regions$diff[j]<CENTROMERE_NOISE_SEG_SIZE){ #FOR EXCLUSION: segment is short IVD region (default<1Mb) and endpos is over the p-arm limit (ending point)
           noise=append(noise,j)
         }
+        #if (loh_regions$end.pos[j]>chr_loc$cen.left.base[i] & loh_regions$diff[j]>CENTROMERE_NOISE_SEG_SIZE & !is.na(match(chrom,c(1,9,16)))){ # Chr 1,9,16 have large heterochromatin region next to centromere
+        #  noise=append(noise,j)
+        #}
       }
       if (loh_regions$arm[j]=="q"){
-        if (loh_regions$start.pos[j]-chr_loc$cen.right.base[i]<CENTROMERE_DIST){ #FOR EXCLUSION: max distance to centromere = 500kb
+        #if (loh_regions$start.pos[j]-chr_loc$cen.right.base[i]<1e5 & loh_regions$diff[j]<1e6){ #FOR EXCLUSION: max distance to centromere = 100kb , max length of short LOH region = 1Mb
+        #  noise=append(noise,j)
+        #}
+        if (loh_regions$start.pos[j]<chr_loc$cen.right.base[i] & loh_regions$diff[j]<CENTROMERE_NOISE_SEG_SIZE){ #FOR EXCLUSION: segment is short IVD region (default<1Mb) and startpos is below the q-arm limit (starting point)
+          noise=append(noise,j)
+        }
+        if (loh_regions$start.pos[j]<(chr_loc$cen.right.base[i]+1e5) & loh_regions$diff[j]>CENTROMERE_NOISE_SEG_SIZE & !is.na(match(chrom,c(1,9,16)))){ # qARM of Chr 1,9,16 have large heterochromatin region next to centromere + 100kb tolerance for start of heterochromatin region
           noise=append(noise,j)
         }
       }
@@ -205,7 +200,7 @@ germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom
   if (!is.null(noise)){
     LOH_regions=loh_regions[-noise,]
   } else {LOH_regions=loh_regions}
-  #
+  
   #remove LOH regions in the p arm of acrocentric chromosomes 13,14,15,21 and 22
   if (!is.na(match(i,c(13:15,21:22))) & !is.null(nrow(LOH_regions))){
     LOH_regions=LOH_regions[which(LOH_regions$arm!="p"),]
@@ -681,10 +676,11 @@ germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom
       print(paste("reconstruction OK - new alleleCounts file generated for chr",i))
     } else {
       centro_ac=ac[which(ac$position>chr_loc$cen.left.base[i] & ac$position<chr_loc$cen.right.base[i]),]
-      if (nrow(non_lohs)+nrow(lohs)+nrow(centro_ac)==nrow(ac)){
+      ac_out=rbind(non_lohs,lohs,centro_ac)
+      ac_out=ac_out[order(ac_out$position),]
+      ac_out=ac_out[!duplicated(ac_out$position),]
+      if (nrow(ac_out)==nrow(ac)){
         print("reconstruction OK but SNPs found in the centromeric region - adding them back for consistency with original ac files")
-        ac_out=rbind(non_lohs,lohs,centro_ac)
-        ac_out=ac_out[order(ac_out$position),]
         write.table(ac_out,paste0(NORMALNAME,"_alleleFrequencies_chr",i,".txt"),col.names=F,row.names=F,quote=F,sep="\t")
         } else {
       print("ERROR - missing SNPs - LOH and non-LOH regions not generated correctly; no AC file generated")}
@@ -937,13 +933,12 @@ gc.correct.wgs.germline = function(germline_LogR_file, outfile, correlations_out
 #' @param min_map_qual Minimum mapping quality required for a read to be counted
 #' @param allelecounter_exe Path to the allele counter executable (can be found in $PATH)
 #' @param min_normal_depth Minimum depth required in the normal for a SNP to be included
-#' @param nthreads The number of paralel processes to run
 #' @param skip_allele_counting Flag, set to TRUE if allele counting is already complete (files are expected in the working directory on disk)
 #' @author Naser Ansari-Pour (BDI, Oxford)
 #' @export
 prepare_wgs_germline = function(chrom_names, chrom_coord, germlinebam, germlinename, g1000lociprefix, g1000allelesprefix, gamma_ivd=1e5, kmin_ivd=50, centromere_dist=5e5,
                                  min_het_dist=2e3, gamma_logr=100, length_adjacent=5e4, gccorrectprefix,repliccorrectprefix, min_base_qual, min_map_qual, 
-                                 allelecounter_exe, min_normal_depth, nthreads, skip_allele_counting) {
+                                 allelecounter_exe, min_normal_depth, skip_allele_counting) {
   
   requireNamespace("foreach")
   requireNamespace("doParallel")
@@ -961,6 +956,9 @@ prepare_wgs_germline = function(chrom_names, chrom_coord, germlinebam, germlinen
     }
   }
   
+  # Standardise Chr notation (removes 'chr' string if present; essential for cell_line_baf_logR)
+
+  standardiseChrNotation_germline(GERMLINENAME=germlinename)
   
   # Obtain BAF and LogR from the raw allele counts of the germline
   germline_baf_logR(GERMLINENAME=germlinename,

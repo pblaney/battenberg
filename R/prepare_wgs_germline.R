@@ -118,7 +118,7 @@ germline_baf_logR = function(GERMLINENAME,g1000alleles.prefix,chrom_names){
 #' @author Naser Ansari-Pour (BDI, Oxford)
 #' @export
 
-germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom,GL_OHET,GL_AL,GL_AC,GL_LogR,GAMMA_IVD,KMIN_IVD,CENTROMERE_DIST,MIN_HET_DIST,GAMMA_LOGR,LENGTH_ADJACENT){
+germline_reconstruct_normal = function(GERMLINENAME,NORMALNAME,chrom_coord,chrom,GL_OHET,GL_AL,GL_AC,GL_LogR,GAMMA_IVD,KMIN_IVD,CENTROMERE_NOISE_SEG_SIZE,CENTROMERE_DIST,MIN_HET_DIST,GAMMA_LOGR,LENGTH_ADJACENT){
   # IDENTIFY REGIONS OF LOH #
   colClasses=c(chr="numeric",start="numeric",cen.left.base="numeric",cen.right.base="numeric",end="numeric")
   chr_loc=read.table(chrom_coord,colClasses = colClasses,header=T,stringsAsFactors = F) # chrom_coord = full path to chromosome coordinates
@@ -936,8 +936,8 @@ gc.correct.wgs.germline = function(germline_LogR_file, outfile, correlations_out
 #' @param skip_allele_counting Flag, set to TRUE if allele counting is already complete (files are expected in the working directory on disk)
 #' @author Naser Ansari-Pour (BDI, Oxford)
 #' @export
-prepare_wgs_germline = function(chrom_names, chrom_coord, germlinebam, germlinename, g1000lociprefix, g1000allelesprefix, gamma_ivd=1e5, kmin_ivd=50, centromere_dist=5e5,
-                                 min_het_dist=2e3, gamma_logr=100, length_adjacent=5e4, gccorrectprefix,repliccorrectprefix, min_base_qual, min_map_qual, 
+prepare_wgs_germline = function(chrom_names, chrom_coord, germlinebam, germlinename, g1000lociprefix, g1000allelesprefix, gamma_ivd=1e5, kmin_ivd=50, centromere_noise_seg_size=1e6,
+                                centromere_dist=5e5, min_het_dist=2e3, gamma_logr=100, length_adjacent=5e4, gccorrectprefix,repliccorrectprefix, min_base_qual, min_map_qual, 
                                  allelecounter_exe, min_normal_depth, skip_allele_counting) {
   
   requireNamespace("foreach")
@@ -980,6 +980,7 @@ prepare_wgs_germline = function(chrom_names, chrom_coord, germlinebam, germlinen
                                  GL_LogR=GL_LogR,
                                  GAMMA_IVD=gamma_ivd,
                                  KMIN_IVD=kmin_ivd,
+                                 CENTROMERE_NOISE_SEG_SIZE=centromere_noise_seg_size,
                                  CENTROMERE_DIST=centromere_dist,
                                  MIN_HET_DIST=min_het_dist,
                                  GAMMA_LOGR=gamma_logr,

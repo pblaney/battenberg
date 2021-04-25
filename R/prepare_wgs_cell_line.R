@@ -1,30 +1,3 @@
-#' Obtain allele counts for 1000 Genomes loci through external program alleleCount
-#'
-#' @param bam.file A BAM alignment file on which the counter should be run.
-#' @param output.file The file where output should go.
-#' @param g1000.loci A file with 1000 Genomes SNP loci.
-#' @param min.base.qual The minimum base quality required for it to be counted (optional, default=20).
-#' @param min.map.qual The minimum mapping quality required for it to be counted (optional, default=35).
-#' @param allelecounter.exe A pointer to where the alleleCounter executable can be found (optional, default points to $PATH).
-#' @author sd11
-#' @export
-getAlleleCounts = function(bam.file, output.file, g1000.loci, min.base.qual=20, min.map.qual=35, allelecounter.exe="alleleCounter") {
-  cmd = paste(allelecounter.exe,
-              "-b", bam.file,
-              "-l", g1000.loci,
-              "-o", output.file,
-              "-m", min.base.qual,
-              "-q", min.map.qual)
-  
-  
-  # alleleCount >= v4.0.0 is sped up considerably on 1000G loci when run in dense-snp mode            
-  counter_version = system(paste(allelecounter.exe, "--version"), intern = T)
-  if (as.integer(substr(x = counter_version, start = 1, stop = 1)) >= 4)
-    cmd = paste(cmd, "--dense-snps")
-  
-  system(cmd, wait=T)
-}
-
 #' Chromosome notation standardisation (removing 'chr' string from chromosome names - mainly an issue in hg38 BAMs)
 #'
 #' @param tumourname Tumour identifier, this is used as a prefix for the allele count files. If allele counts are supplied separately, they are expected to have this identifier as prefix.
@@ -104,20 +77,20 @@ cell_line_baf_logR = function(TUMOURNAME,g1000alleles.prefix,chrom_names){
   MAC$logr=log2(MAC$coverage/mean(MAC$coverage,na.rm=TRUE)) # in case of coverage == NA due to non-matching alleles or presence of indels in loci file
   MACC=MAC[which(!is.na(MAC$baf)),]
   print(nrow(MAC)-nrow(MACC))
-  
+
   BAF=data.frame(Chromosome=MACC$chr,Position=MACC$pos,cellline=MACC$baf)
   names(BAF)[names(BAF) == "cellline"] <- cellline
   BAF=BAF[order(BAF$Chromosome,BAF$Position),]
   BAF$Chromosome[BAF$Chromosome==23]="X" # revert back from 23 to X for Chromosome name
   write.table(BAF,paste0(cellline,"_mutantBAF.tab"),col.names=T,row.names=F,quote=F,sep="\t")
   rm(BAF)
-  
+
   LogR=data.frame(Chromosome=MACC$chr,Position=MACC$pos,cellline=MACC$logr)
   names(LogR)[names(LogR) == "cellline"] <- cellline
   LogR=LogR[order(LogR$Chromosome,LogR$Position),]
   LogR$Chromosome[LogR$Chromosome==23]="X" # revert back from 23 to X for Chromosome name
   write.table(LogR,paste0(cellline,"_mutantLogR.tab"),col.names=T,row.names=F,quote=F,sep="\t")
-  
+
   rm(MAC)
   rm(MaC)
   rm(MACC)
@@ -173,7 +146,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
   plotChrom(pcf_input,PCF)
   dev.off()
   PCF$diff=PCF$end.pos-PCF$start.pos
-  
+
   # Decide if there is any LOH based on PCF and chr_snp_density
   chr_snp_density=nrow(pcf_input)/(pcf_input$position[nrow(pcf_input)]-pcf_input$position[1]) # density of HET SNPs across the region covered by HET SNPs
   #CALCULATE min_normal_snp_density#
@@ -196,7 +169,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
     print(paste("likely partial LOH(s) at chr",i))
   }
   } else {loh_regions=0}
-	
+
   # loop to turn empty dataframe to 0 for loh_regions 
   #suppressWarnings(
   #  if (loh_regions[1]!=0){
@@ -204,7 +177,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
   #      loh_regions=0
   #    } else {print("dataframe non-empty")}
   #  } else {print("no LOH at all")})
-  
+
   #filter regions for those next to the centromere and 'short'
   noise=NULL
   if (!is.null(nrow(loh_regions))){
@@ -306,9 +279,9 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
     }
     non_LOH$diff=non_LOH$end-non_LOH$start
   }
-  
+
   non_LOH=non_LOH[order(non_LOH$start),] # the non_LOH should always be in order by position
-  
+
   #STEP 2.1: identify LOH by inter-het regions
   winsize=MIN_HET_DIST # optimum value is 1e5 in differentiating from HOM stretch in sample
   ohet=CL_OHET[[i]] 
@@ -327,7 +300,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
       } else if (nrow(PARM)==0 & sum(non_LOH$diff)!=0) {
         parm=data.frame(start=chr_interval[1],end=chr_loc[i,]$cen.left.base-CENTROMERE_DIST)
       } else {print("unknown issue")}
-      
+
       if (parm[nrow(parm),1]<(parm[nrow(parm),2]-CENTROMERE_DIST)){ 
         parm[nrow(parm),2]=parm[nrow(parm),2]-CENTROMERE_DIST # to exclude the last CENTROMERE_DIST segment next to the centromere (left side) - too noisy
       } else {parm=parm[-nrow(parm),]}
@@ -476,7 +449,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
           }
         }
       } else {print(paste("no het SNPs in segment",seg))}
-      
+
       # no. of LoH intervals
       print(paste("q-arm nrow(LoH) segment",seg,"=",nrow(LoH)))
       if (nrow(LoH)==0){
@@ -550,7 +523,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
         LOH[[i]]=LOH_regions
       }
     }
-    
+
     #combine adjacent regions into larger regions of LOH
     if (!is.null(nrow(LOH[[i]]))){
       LOH[[i]]=LOH[[i]][!duplicated(LOH[[i]]),]
@@ -592,7 +565,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
     print("LOHall")
     print(LOHall)
   }
-  
+
   if (!is.null(nrow(LOHall))){
     LOHall=LOHall[!duplicated(LOHall),]
     LOHall$diff=LOHall$end.pos-LOHall$start.pos
@@ -602,7 +575,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
   if (exists("non_LOH")){
     rm(non_LOH)
   }
-  
+
   #STEP 3####################################################################################################################################################
   # RECONSTRUCT alleleCounter files for the pseudo-NORMAL sample
   # use loop to find intervening blocks with no LOH - while taking account of the centromere - RUN2####
@@ -680,7 +653,7 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
       print(paste("LOH region segment",j))
       lohs=rbind(lohs,m)
     }
-    
+
     lohs=lohs[,c("chr","position",1:4,"depth")]
     ####
     # combine alleleCounts for LOHS and non_LOH regions####
@@ -715,223 +688,6 @@ cell_line_reconstruct_normal <-function(TUMOURNAME,NORMALNAME,chrom_coord,chrom,
   print(paste("STEP 2&3 - chr",i,"completed"))
 }
 
-#' Prepare data for impute
-#'
-#' @param chrom The chromosome for which impute input should be generated.
-#' @param tumour.allele.counts.file Output from the allele counter on the matched tumour for this chromosome.
-#' @param normal.allele.counts.file Output from the allele counter on the matched normal for this chromosome.
-#' @param output.file File where the impute input for this chromosome will be written.
-#' @param imputeinfofile Info file with impute reference information.
-#' @param is.male Boolean denoting whether this sample is male (TRUE), or female (FALSE).
-#' @param problemLociFile A file containing genomic locations that must be discarded (optional).
-#' @param useLociFile A file containing genomic locations that must be included (optional).
-#' @param heterozygousFilter The cutoff where a SNP will be considered as heterozygous (default 0.01).
-#' @author dw9, sd11
-#' @export
-generate.impute.input.wgs = function(chrom, tumour.allele.counts.file, normal.allele.counts.file, output.file, imputeinfofile, is.male, problemLociFile=NA, useLociFile=NA, heterozygousFilter=0.1) {
-  
-  # Read in the 1000 genomes reference file paths for the specified chrom
-  impute.info = parse.imputeinfofile(imputeinfofile, is.male, chrom=chrom)
-  chr_names = unique(impute.info$chrom)
-  chrom_name = parse.imputeinfofile(imputeinfofile, is.male)$chrom[chrom]
-  
-  #print(paste("GenerateImputeInput is.male? ", is.male,sep=""))
-  #print(paste("GenerateImputeInput #impute files? ", nrow(impute.info),sep=""))
-  
-  # Read in the known SNP locations from the 1000 genomes reference files
-  known_SNPs = read.table(impute.info$impute_legend[1], sep=" ", header=T, stringsAsFactors=F)
-  if(nrow(impute.info)>1){
-    for(r in 2:nrow(impute.info)){
-      known_SNPs = rbind(known_SNPs, read.table(impute.info$impute_legend[r], sep=" ", header=T, stringsAsFactors=F))
-    }
-  }
-  
-  # filter out bad SNPs (streaks in BAF)
-  if((problemLociFile != "NA") & (!is.na(problemLociFile))) {
-    problemSNPs = read.table(problemLociFile, header=T, sep="\t", stringsAsFactors=F)
-    problemSNPs = problemSNPs$Pos[problemSNPs$Chr==chrom_name]
-    badIndices = match(known_SNPs$position, problemSNPs)
-    known_SNPs = known_SNPs[is.na(badIndices),]
-    rm(problemSNPs, badIndices)
-  }
-  
-  # filter 'good' SNPs (e.g. SNP6 positions)
-  if((useLociFile != "NA") & (!is.na(useLociFile))) {
-    goodSNPs = read.table(useLociFile, header=T, sep="\t", stringsAsFactors=F)
-    goodSNPs = goodSNPs$pos[goodSNPs$chr==chrom_name]  
-    len = length(goodSNPs)
-    goodIndices = match(known_SNPs$position, goodSNPs)
-    known_SNPs = known_SNPs[!is.na(goodIndices),]
-    rm(goodSNPs, goodIndices)
-  }
-  
-  # Read in the allele counts and see which known SNPs are covered
-  snp_data = read.table(tumour.allele.counts.file, comment.char="#", sep="\t", header=F, stringsAsFactors=F)
-  normal_snp_data = read.table(normal.allele.counts.file, comment.char="#", sep="\t", header=F, stringsAsFactors=F)
-  snp_data = cbind(snp_data, normal_snp_data)
-  indices = match(known_SNPs$position, snp_data[,2])
-  found_snp_data = snp_data[indices[!is.na(indices)],]
-  rm(snp_data)
-  
-  # Obtain BAF for this chromosome (note: this is quicker than reading in the whole genome BAF file generated in the earlier step)
-  nucleotides = c("A","C","G","T")
-  ref_indices = match(known_SNPs[!is.na(indices),3], nucleotides)+ncol(normal_snp_data)+2
-  alt_indices = match(known_SNPs[!is.na(indices),4], nucleotides)+ncol(normal_snp_data)+2
-  BAFs = as.numeric(found_snp_data[cbind(1:nrow(found_snp_data),alt_indices)])/(as.numeric(found_snp_data[cbind(1:nrow(found_snp_data),alt_indices)])+as.numeric(found_snp_data[cbind(1:nrow(found_snp_data),ref_indices)]))
-  BAFs[is.nan(BAFs)] = 0
-  rm(nucleotides, ref_indices, alt_indices, found_snp_data, normal_snp_data)
-  
-  # Set the minimum level to use for obtaining genotypes
-  minBaf = min(heterozygousFilter, 1.0-heterozygousFilter)
-  maxBaf = max(heterozygousFilter, 1.0-heterozygousFilter)
-  
-  # Obtain genotypes that impute2 is able to understand
-  genotypes = array(0,c(sum(!is.na(indices)),3))
-  genotypes[BAFs<=minBaf,1] = 1
-  genotypes[BAFs>minBaf & BAFs<maxBaf,2] = 1
-  genotypes[BAFs>=maxBaf,3] = 1	
-  
-  # Create the output
-  snp.names = paste("snp",1:sum(!is.na(indices)), sep="")
-  out.data = cbind(snp.names, known_SNPs[!is.na(indices),1:4], genotypes)
-  
-  write.table(out.data, file=output.file, row.names=F, col.names=F, quote=F)
-  if(is.na(as.numeric(chrom_name))) {
-    sample.g.file = paste(dirname(output.file), "/sample_g.txt", sep="")
-    #not sure this is necessary, because only the PAR regions are used for males
-    #if(is.male){
-    #	sample_g_data=data.frame(ID_1=c(0,"INDIVI1"),ID_2=c(0,"INDIVI1"),missing=c(0,0),sex=c("D",1))
-    #}else{
-    sample_g_data = data.frame(ID_1=c(0,"INDIVI1"), ID_2=c(0,"INDIVI1"), missing=c(0,0), sex=c("D",2))
-    #}
-    write.table(sample_g_data, file=sample.g.file, row.names=F, col.names=T, quote=F)
-  }
-}
-
-#' Function to correct LogR for waivyness that correlates with GC content
-#' @param Tumour_LogR_file String pointing to the tumour LogR output
-#' @param outfile String pointing to where the GC corrected LogR should be written
-#' @param correlations_outfile File where correlations are to be saved
-#' @param gc_content_file_prefix String pointing to where GC windows for this reference genome can be 
-#' found. These files should be split per chromosome and this prefix must contain the full path until
-#' chr in its name. The .txt extension is automatically added.
-#' @param replic_timing_file_prefix Like the gc_content_file_prefix, containing replication timing info (supply NULL if no replication timing correction is to be applied)
-#' @param chrom_names A vector containing chromosome names to be considered
-#' @param recalc_corr_afterwards Set to TRUE to recalculate correlations after correction
-#' @author jonas demeulemeester, sd11
-#' @export
-gc.correct.wgs = function(Tumour_LogR_file, outfile, correlations_outfile, gc_content_file_prefix, replic_timing_file_prefix, chrom_names, recalc_corr_afterwards=F) {
-  
-  if (is.null(gc_content_file_prefix)) {
-    stop("GC content reference files must be supplied to WGS GC content correction")
-  }
-  
-  Tumor_LogR = read_logr(Tumour_LogR_file)
-  
-  print("Processing GC content data")
-  chrom_idx = 1:length(chrom_names)
-  gc_files = paste0(gc_content_file_prefix, chrom_idx, ".txt.gz")
-  GC_data = do.call(rbind, lapply(gc_files, read_gccontent))
-  colnames(GC_data) = c("chr", "Position", paste0(c(25,50,100,200,500), "bp"),
-                        paste0(c(1,2,5,10,20,50,100), "kb"))#,200,500), "kb"),
-  # paste0(c(1,2,5,10), "Mb"))
-  
-  if (!is.null(replic_timing_file_prefix)) {
-    print("Processing replciation timing data")
-    replic_files = paste0(replic_timing_file_prefix, chrom_idx, ".txt.gz")
-    replic_data = do.call(rbind, lapply(replic_files, read_replication))
-  }
-  
-  # omit non-matching loci, replication data generated at exactly same GC loci
-  locimatches = match(x = paste0(Tumor_LogR$Chromosome, "_", Tumor_LogR$Position),
-                      table = paste0(GC_data$chr, "_", GC_data$Position))
-  Tumor_LogR = Tumor_LogR[which(!is.na(locimatches)), ]
-  GC_data = GC_data[na.omit(locimatches), ]
-  if (!is.null(replic_timing_file_prefix)) {
-    replic_data = replic_data[na.omit(locimatches), ]
-  }
-  rm(locimatches)
-  
-  corr = abs(cor(GC_data[, 3:ncol(GC_data)], Tumor_LogR[,3], use="complete.obs")[,1])
-  if (!is.null(replic_timing_file_prefix)) {
-    corr_rep = abs(cor(replic_data[, 3:ncol(replic_data)], Tumor_LogR[,3], use="complete.obs")[,1])
-  }
-  
-  index_1kb = which(names(corr)=="1kb")
-  maxGCcol_insert = names(which.max(corr[1:index_1kb]))
-  index_100kb = which(names(corr)=="100kb")
-  # start large window sizes at 5kb rather than 2kb to avoid overly correlated expl variables
-  maxGCcol_amplic = names(which.max(corr[(index_1kb+2):index_100kb]))
-  if (!is.null(replic_timing_file_prefix)) {
-    maxreplic = names(which.max(corr_rep))
-  }
-  
-  if (!is.null(replic_timing_file_prefix)) {
-    cat("Replication timing correlation: ",paste(names(corr_rep),format(corr_rep,digits=2), ";"),"\n") 
-    cat("Replication dataset: " ,maxreplic,"\n")
-  }
-  cat("GC correlation: ",paste(names(corr),format(corr,digits=2), ";"),"\n")   
-  cat("Short window size: ",maxGCcol_insert,"\n")
-  cat("Long window size: ",maxGCcol_amplic,"\n")
-  
-  if (!is.null(replic_timing_file_prefix)) {
-    # Multiple regression - with replication timing
-    corrdata = data.frame(logr = Tumor_LogR[,3, drop = T],
-                          GC_insert = GC_data[,maxGCcol_insert, drop = T],
-                          GC_amplic = GC_data[,maxGCcol_amplic, drop = T],
-                          replic = replic_data[, maxreplic, drop = T])
-    colnames(corrdata) = c("logr", "GC_insert", "GC_amplic", "replic")
-    if (!recalc_corr_afterwards)
-      rm(GC_data, replic_data)
-    
-    model = lm(logr ~ splines::ns(x = GC_insert, df = 5, intercept = T) + splines::ns(x = GC_amplic, df = 5, intercept = T) + splines::ns(x = replic, df = 5, intercept = T), y=F, model = F, data = corrdata, na.action="na.exclude")
-    
-    corr = data.frame(windowsize=c(names(corr), names(corr_rep)), correlation=c(corr, corr_rep))
-    write.table(corr, file=gsub(".txt", "_beforeCorrection.txt", correlations_outfile), sep="\t", quote=F, row.names=F)
-    
-  } else {
-    # Multiple regression  - without replication timing
-    corrdata = data.frame(logr = Tumor_LogR[,3, drop = T],
-                          GC_insert = GC_data[,maxGCcol_insert, drop = T],
-                          GC_amplic = GC_data[,maxGCcol_amplic, drop = T])
-    colnames(corrdata) = c("logr", "GC_insert", "GC_amplic")
-    if (!recalc_corr_afterwards)
-      rm(GC_data)
-    
-    model = lm(logr ~ splines::ns(x = GC_insert, df = 5, intercept = T) + splines::ns(x = GC_amplic, df = 5, intercept = T), y=F, model = F, data = corrdata, na.action="na.exclude")
-    
-    corr = data.frame(windowsize=names(corr), correlation=corr)
-    write.table(corr, file=gsub(".txt", "_beforeCorrection.txt", correlations_outfile), sep="\t", quote=F, row.names=F)
-  }
-  
-  Tumor_LogR[,3] = residuals(model)
-  rm(model, corrdata)
-  
-  readr::write_tsv(x=Tumor_LogR[which(!is.na(Tumor_LogR[,3])), ], path=outfile)
-  
-  if (recalc_corr_afterwards) {
-    # Recalculate the correlations to see how much there is left
-    corr = abs(cor(GC_data[, 3:ncol(GC_data)], Tumor_LogR[,3], use="complete.obs")[,1])
-    if (!is.null(replic_timing_file_prefix)) {
-      corr_rep = abs(cor(replic_data[, 3:ncol(replic_data)], Tumor_LogR[,3], use="complete.obs")[,1])
-      cat("Replication timing correlation post correction: ",paste(names(corr_rep),format(corr_rep,digits=2), ";"),"\n") 
-    }
-    cat("GC correlation post correction: ",paste(names(corr),format(corr,digits=2), ";"),"\n")   
-    
-    if (!is.null(replic_timing_file_prefix)) {
-      corr = data.frame(windowsize=c(names(corr), names(corr_rep)), correlation=c(corr, corr_rep))
-      write.table(corr, file=gsub(".txt", "_afterCorrection.txt", correlations_outfile), sep="\t", quote=F, row.names=F)
-    } else {
-      corr = data.frame(windowsize=c(names(corr)), correlation=corr)
-      write.table(corr, file=gsub(".txt", "_afterCorrection.txt", correlations_outfile), sep="\t", quote=F, row.names=F)
-    }
-  } else {
-    corr$correlation = NA
-    write.table(corr, file=gsub(".txt", "_afterCorrection.txt", correlations_outfile), sep="\t", quote=F, row.names=F)
-  }
-}
-
-
 #' Prepare WGS data of cell line for haplotype construction
 #' 
 #' This function performs part of the Battenberg WGS pipeline: Counting alleles, generating BAF and logR, 
@@ -955,18 +711,17 @@ gc.correct.wgs = function(Tumour_LogR_file, outfile, correlations_outfile, gc_co
 #' @param min_map_qual Minimum mapping quality required for a read to be counted
 #' @param allelecounter_exe Path to the allele counter executable (can be found in $PATH)
 #' @param min_normal_depth Minimum depth required in the normal for a SNP to be included
-#' @param nthreads The number of paralel processes to run
 #' @param skip_allele_counting Flag, set to TRUE if allele counting is already complete (files are expected in the working directory on disk)
 #' @author Naser Ansari-Pour (BDI, Oxford)
 #' @export
 prepare_wgs_cell_line = function(chrom_names, chrom_coord, tumourbam, tumourname, g1000lociprefix, g1000allelesprefix, gamma_ivd=1e5, kmin_ivd=50, centromere_noise_seg_size=1e6, 
                                  centromere_dist=5e5, min_het_dist=1e5, gamma_logr=100, length_adjacent=5e4, gccorrectprefix,repliccorrectprefix, min_base_qual, min_map_qual, 
-                                 allelecounter_exe, min_normal_depth, nthreads, skip_allele_counting) {
-  
+                                 allelecounter_exe, min_normal_depth, skip_allele_counting) {
+
   requireNamespace("foreach")
   requireNamespace("doParallel")
   requireNamespace("parallel")
-  
+
   if (!skip_allele_counting) {
     # Obtain allele counts for 1000 Genomes locations for the cell line
     foreach::foreach(i=1:length(chrom_names)) %dopar% {
@@ -978,22 +733,22 @@ prepare_wgs_cell_line = function(chrom_names, chrom_coord, tumourbam, tumourname
                       allelecounter.exe=allelecounter_exe)
     }
   }
-  
+
   # Standardise Chr notation (removes 'chr' string if present; essential for cell_line_baf_logR)
-  
+
   standardiseChrNotation(tumourname=tumourname,
                          normalname=NULL) 
-  
+
   # Obtain BAF and LogR from the raw allele counts of the cell line
   cell_line_baf_logR(TUMOURNAME=tumourname,
                      g1000alleles.prefix=g1000allelesprefix,
                      chrom_names=chrom_names
   )
-  
+
   # Reconstruct normal-pair allele count files for the cell line
-  
+
   foreach::foreach(i=1:length(chrom_names),.export=c("cell_line_reconstruct_normal","CL_OHET","CL_AL","CL_AC","CL_LogR"),.packages=c("copynumber","ggplot2","grid")) %dopar% {
-    
+
     cell_line_reconstruct_normal(TUMOURNAME=tumourname,
                                  NORMALNAME=paste0(tumourname,"_normal"),
                                  chrom_coord=chrom_coord,
@@ -1010,13 +765,13 @@ prepare_wgs_cell_line = function(chrom_names, chrom_coord, tumourbam, tumourname
                                  GAMMA_LOGR=gamma_logr,
                                  LENGTH_ADJACENT=length_adjacent)
   }
-  
+
   if (length(list.files(pattern="normal_alleleFrequencies"))==length(chrom_names)){
   print("STEP 2 - Normal allelecounts reconstruction - completed")
     } else { 
     stop("Missing 'normal' allelecount files - all chromosomes NOT reconstructed")
   }
-  
+
   # Perform GC correction
   gc.correct.wgs(Tumour_LogR_file=paste(tumourname,"_mutantLogR.tab", sep=""),
                  outfile=paste(tumourname,"_mutantLogR_gcCorrected.tab", sep=""),

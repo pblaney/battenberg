@@ -665,7 +665,7 @@ merge_segments=function(subclones, bafsegmented, logR, rho, psi, platform_gamma,
   names(GenomicRanges::mcols(logR))='logR'
 
   # Convert LogR chromosome names to match BAF and subclones
-  GenomeInfoDb::seqlevelsStyle(LogR) <- "UCSC"
+  GenomeInfoDb::seqlevelsStyle(logR) <- "UCSC"
 
   # Split GRanges objects by chromosomes
   chr_names=GenomicRanges::seqnames(GenomicRanges::seqinfo(bafsegmented))

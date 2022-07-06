@@ -663,6 +663,10 @@ merge_segments=function(subclones, bafsegmented, logR, rho, psi, platform_gamma,
   bafsegmented=df2gr(bafsegmented,'Chromosome','Position','Position')
   logR=df2gr(logR,'Chromosome','Position','Position')
   names(GenomicRanges::mcols(logR))='logR'
+
+  # Convert LogR chromosome names to match BAF and subclones
+  GenomeInfoDb::seqlevelsStyle(LogR) <- "UCSC"
+
   # Split GRanges objects by chromosomes
   chr_names=GenomicRanges::seqnames(GenomicRanges::seqinfo(bafsegmented))
   subclones=lapply(chr_names,function(x) subclones[GenomicRanges::seqnames(subclones)==x])

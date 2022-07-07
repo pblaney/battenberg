@@ -15,6 +15,7 @@ option_list = list(
   make_option(c("--cpu"), type="numeric", default=8, help="The number of CPU cores to be used by the pipeline (Default: 8)", metavar="character"),
   make_option(c("--bp"), type="character", default=NULL, help="Optional two column file (chromosome and position) specifying prior breakpoints to be used during segmentation", metavar="character"),
   make_option(c("-g", "--ref_genome_build"), type="character", default="hg19", help="Reference genome build to which the reads have been aligned. Options are hg19 and hg38", metavar="character")
+  make_option(c("-d", "--min_depth"), type="string", default="10", help="Minimum read depth to keep SNPs for BAF, lower this threshold for low coverage genomes (10 *default* for 30x coverage in normal sample)", metavar="character")
 )
 
 opt_parser = OptionParser(option_list=option_list)
@@ -33,6 +34,7 @@ SKIP_PHASING = opt$skip_phasing
 NTHREADS = opt$cpu
 PRIOR_BREAKPOINTS_FILE = opt$bp
 GENOMEBUILD = opt$ref_genome_build
+MIN_NORMAL_DEPTH = opt$min_depth
 
 #analysis = "germline"
 
@@ -81,15 +83,15 @@ if (GENOMEBUILD=="hg19") {
 	BEAGLE_BASEDIR = "/hps/research/gerstung/sdentro/reference/human/battenberg_hg38"
 	GENOMEBUILD = "hg38"
 	IMPUTEINFOFILE = file.path(BEAGLE_BASEDIR, "imputation/impute_info.txt")
-	G1000ALLELESPREFIX = file.path(BEAGLE_BASEDIR, "1000G_loci_hg38/1kg.phase3.v5a_GRCh38nounref_allele_index_chr")
-	G1000LOCIPREFIX = file.path(BEAGLE_BASEDIR, "1000G_loci_hg38/1kg.phase3.v5a_GRCh38nounref_loci_chr")
-	GCCORRECTPREFIX = file.path(BEAGLE_BASEDIR, "GC_correction_hg38/1000G_GC_chr")
-	REPLICCORRECTPREFIX = file.path(BEAGLE_BASEDIR, "RT_correction_hg38/1000G_RT_chr")
+	G1000ALLELESPREFIX = file.path(BEAGLE_BASEDIR, "1000G_loci_hg38/1kg.phase3.v5a_GRCh38nounref_allele_index_")
+	G1000LOCIPREFIX = file.path(BEAGLE_BASEDIR, "1000G_loci_hg38/1kg.phase3.v5a_GRCh38nounref_loci_")
+	GCCORRECTPREFIX = file.path(BEAGLE_BASEDIR, "GC_correction_hg38/1000G_GC_")
+	REPLICCORRECTPREFIX = file.path(BEAGLE_BASEDIR, "RT_correction_hg38/1000G_RT_")
 	PROBLEMLOCI = file.path(BEAGLE_BASEDIR, "probloci/probloci.txt.gz")
 	
-	BEAGLEREF.template = file.path(BEAGLE_BASEDIR, "beagle5/chrCHROMNAME.1kg.phase3.v5a_GRCh38nounref.vcf.gz")
-	BEAGLEPLINK.template = file.path(BEAGLE_BASEDIR, "beagle5/plink.chrCHROMNAME.GRCh38.map")
-	BEAGLEJAR = file.path(BEAGLE_BASEDIR, "beagle.18May20.d20.jar")
+	BEAGLEREF.template = file.path(BEAGLE_BASEDIR, "beagle5/CHROMNAME.1kg.phase3.v5a_GRCh38nounref.vcf.gz")
+	BEAGLEPLINK.template = file.path(BEAGLE_BASEDIR, "beagle5/plink.CHROMNAME.GRCh38.map")
+	BEAGLEJAR = file.path(BEAGLE_BASEDIR, "beagle5/beagle.08Feb22.fa4.jar")
 
 	CHROM_COORD_FILE = "/homes/sdentro/repo/battenberg/chromosome_coordinates_hg38.txt"
 } 
@@ -106,7 +108,6 @@ MAX_PLOIDY = 4.8
 MIN_RHO = 0.1
 MIN_GOODNESS_OF_FIT = 0.63
 BALANCED_THRESHOLD = 0.51
-MIN_NORMAL_DEPTH = 10
 MIN_BASE_QUAL = 20
 MIN_MAP_QUAL = 35
 CALC_SEG_BAF_OPTION = 1

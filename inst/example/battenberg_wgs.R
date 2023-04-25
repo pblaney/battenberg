@@ -14,7 +14,10 @@ option_list = list(
   make_option(c("--skip_phasing"), type="logical", default=FALSE, action="store_true", help="Provide when phasing has previously completed. This expects the files on disk", metavar="character"),
   make_option(c("--cpu"), type="numeric", default=8, help="The number of CPU cores to be used by the pipeline (Default: 8)", metavar="character"),
   make_option(c("--bp"), type="character", default=NULL, help="Optional two column file (chromosome and position) specifying prior breakpoints to be used during segmentation", metavar="character"),
-  make_option(c("-g", "--ref_genome_build"), type="character", default="hg19", help="Reference genome build to which the reads have been aligned. Options are hg19 and hg38", metavar="character")
+  make_option(c("-g", "--ref_genome_build"), type="character", default="hg19", help="Reference genome build to which the reads have been aligned. Options are hg19 and hg38", metavar="character"),
+  make_option(c("--prp"), type="logical", default=FALSE, help="Wish to preset rho/purity and psi/ploidy for this run, TRUE or FALSE?", metavar="character"),
+	make_option(c("--rho"), type="numeric", default=NA, help="User-preset value of rho/purity", metavar="character"),
+	make_option(c("--psi"), type="numeric", default=NA, help="User-preset value of psi/ploidy", metavar="character")
 )
 
 opt_parser = OptionParser(option_list=option_list)
@@ -33,6 +36,9 @@ SKIP_PHASING = opt$skip_phasing
 NTHREADS = opt$cpu
 PRIOR_BREAKPOINTS_FILE = opt$bp
 GENOMEBUILD = opt$ref_genome_build
+USEPRESET = opt$prp
+PRESETRHO = opt$rho
+PRESETPSI = opt$psi
 
 #analysis = "germline"
 
@@ -161,4 +167,7 @@ battenberg(analysis=analysis,
            skip_phasing=SKIP_PHASING,
            prior_breakpoints_file=PRIOR_BREAKPOINTS_FILE,
 	   GENOMEBUILD=GENOMEBUILD,
-	   chrom_coord_file=CHROM_COORD_FILE)
+	   chrom_coord_file=CHROM_COORD_FILE,
+	   use.preset.rho.psi=USEPRESET,
+	   preset.rho=PRESETRHO,
+	   preset.psi=PRESETPSI)

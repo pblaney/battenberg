@@ -17,7 +17,8 @@ option_list = list(
   make_option(c("-g", "--ref_genome_build"), type="character", default="hg19", help="Reference genome build to which the reads have been aligned. Options are hg19 and hg38", metavar="character"),
   make_option(c("--prp"), type="logical", default=FALSE, help="Wish to preset rho/purity and psi/ploidy for this run, TRUE or FALSE?", metavar="character"),
 	make_option(c("--rho"), type="numeric", default=NA, help="User-preset value of rho/purity", metavar="character"),
-	make_option(c("--psi"), type="numeric", default=NA, help="User-preset value of psi/ploidy", metavar="character")
+	make_option(c("--psi"), type="numeric", default=NA, help="User-preset value of psi/ploidy", metavar="character"),
+	make_option(c("--fit_csv"), type="character", default=NA, help="Name of fitted CNV profile output .csv", metavar="character")
 )
 
 opt_parser = OptionParser(option_list=option_list)
@@ -39,6 +40,7 @@ GENOMEBUILD = opt$ref_genome_build
 USEPRESET = opt$prp
 PRESETRHO = opt$rho
 PRESETPSI = opt$psi
+FITCNVCSV = opt$fit_csv
 
 #analysis = "germline"
 
@@ -170,4 +172,5 @@ battenberg(analysis=analysis,
 	   chrom_coord_file=CHROM_COORD_FILE,
 	   use.preset.rho.psi=USEPRESET,
 	   preset.rho=PRESETRHO,
-	   preset.psi=PRESETPSI)
+	   preset.psi=PRESETPSI,
+	   fit_cnv_profile_csv=FITCNVCSV)

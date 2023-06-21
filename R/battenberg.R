@@ -61,6 +61,7 @@
 #' @param use.preset.rho.psi Wish to preset rho/purity and psi/ploidy for this run, TRUE or FALSE (Default: FALSE)
 #' @param preset.rho User-preset value of rho/purity (Default: NA)
 #' @param preset.psi User-preset value of psi/ploidy (Default: NA)
+#' @param fit.cnv.profile.csv Name of output CSV from fit.copy.number process (i.e. CNV profile before callSubclones process) (Default: NA)
 #' @author sd11, jdemeul, Naser Ansari-Pour
 #' @export
 battenberg = function(analysis="paired", tumourname, normalname, tumour_data_file, normal_data_file, imputeinfofile, g1000prefix, problemloci, gccorrectprefix=NULL,
@@ -80,7 +81,7 @@ battenberg = function(analysis="paired", tumourname, normalname, tumour_data_fil
                       write_battenberg_phasing = T, multisample_relative_weight_balanced = 0.25, multisample_maxlag = 100, segmentation_gamma_multisample = 5,
                       snp6_reference_info_file=NA, apt.probeset.genotype.exe="apt-probeset-genotype", apt.probeset.summarize.exe="apt-probeset-summarize",
                       norm.geno.clust.exe="normalize_affy_geno_cluster.pl", birdseed_report_file="birdseed.report.txt", heterozygousFilter="none",
-                      prior_breakpoints_file=NULL, GENOMEBUILD="hg19", chrom_coord_file=NULL, use.preset.rho.psi=FALSE, preset.rho=NA, preset.psi=NA) {
+                      prior_breakpoints_file=NULL, GENOMEBUILD="hg19", chrom_coord_file=NULL, use.preset.rho.psi=FALSE, preset.rho=NA, preset.psi=NA, fit.cnv.profile.csv=NA) {
   
   requireNamespace("foreach")
   requireNamespace("doParallel")
@@ -481,6 +482,7 @@ prepare_wgs_germline(chrom_names=chrom_names,
                     use_preset_rho_psi=use.preset.rho.psi,
                     preset_rho=preset.rho,
                     preset_psi=preset.psi,
+                    fit_cnv_profile_csv=fit.cnv.profile.csv,
                     read_depth=30,
                     analysis=analysis)
     

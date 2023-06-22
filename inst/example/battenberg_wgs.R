@@ -173,4 +173,4 @@ battenberg(analysis=analysis,
 	   use.preset.rho.psi=USEPRESET,
 	   preset.rho=PRESETRHO,
 	   preset.psi=PRESETPSI,
-	   fit_cnv_profile_csv=FITCNVCSV)
+	   fit.cnv.profile.csv=FITCNVCSV)
